@@ -6,38 +6,21 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.Mongo;
 
 public class MongoConcurrentMap<K, V> implements ConcurrentMap<K, V> {
     
-    Mongo mongo;
-    DB db;
     DBCollection collection;
     DBObjectSerializer<K> keySerializer;
     DBObjectSerializer<V> valueSerializer;
     
-    String dbName;
-    String collectionName;
-    Class<V> valueType;
-    
-    public MongoConcurrentMap(Mongo mongo,
-            String dbName,
-            String collectionName,
-            Class<V> valueType,
+    public MongoConcurrentMap(DBCollection collection,
             DBObjectSerializer<K> keySerializer,
             DBObjectSerializer<V> valueSerializer) {
-        this.mongo = mongo;
-        this.dbName = dbName;
-        this.collectionName = collectionName;
-        this.valueType = valueType;
+        this.collection = collection;
         this.keySerializer = keySerializer;
         this.valueSerializer = valueSerializer;
-        
-        db = mongo.getDB(dbName);
-        collection = db.getCollection(collectionName);
     }
     
     @Override
@@ -72,10 +55,12 @@ public class MongoConcurrentMap<K, V> implements ConcurrentMap<K, V> {
     @Override
     public V put(K key, V value) {
         DBObject dbObject;
-        V old = get(key);
+        DBObject queryObject = keySerializer.toDBObject(key, true, false);
+        DBObject result = collection.findOne(queryObject);
+        V old = result != null ? valueSerializer.toElement(result) : null;
         
         if (old != null) {
-            dbObject = collection.findOne(keySerializer.toDBObject(key, true, false));
+            dbObject = result;
         } else {
             dbObject = keySerializer.toDBObject(key, false, false);
         }
@@ -88,8 +73,10 @@ public class MongoConcurrentMap<K, V> implements ConcurrentMap<K, V> {
     @Override
     @SuppressWarnings("unchecked")
     public V remove(Object key) {
-        V old = get(key);
-        collection.remove(keySerializer.toDBObject((K) key, true, false));
+        DBObject queryObject = keySerializer.toDBObject((K) key, true, false);
+        DBObject result = collection.findOne(queryObject);
+        V old = result != null ? valueSerializer.toElement(result) : null;
+        collection.remove(queryObject);
         return old;
     }
     
@@ -137,9 +124,9 @@ public class MongoConcurrentMap<K, V> implements ConcurrentMap<K, V> {
     @Override
     public V putIfAbsent(K key, V value) {
         if (!containsKey(key)) {
-            put(key, value);
+            return put(key, value);
         }
-        return null;
+        return get(key);
     }
     
     @Override
