@@ -26,7 +26,7 @@ import com.mongodb.MongoException;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MongoConcurrentMapPutIfAbsentTest {
-    
+
     MongoConcurrentMap<String, TestBean> map;
     @Mock
     DBCollection collection;
@@ -42,34 +42,35 @@ public class MongoConcurrentMapPutIfAbsentTest {
     DBObject resultObject;
     @Captor
     ArgumentCaptor<TestBean> valueCaptor;
-    
+
     @Before
     public void createMap() throws UnknownHostException, MongoException {
         when(keySerializer.toDBObject(anyString(), anyBoolean(), anyBoolean())).thenReturn(keyQueryObject);
         when(valueSerializer.toDBObject(any(TestBean.class), anyBoolean(), anyBoolean())).thenReturn(valueQueryObject);
         map = spy(new MongoConcurrentMap<String, TestBean>(collection, keySerializer, valueSerializer));
     }
-    
+
     @Test
     public void putNotExistingValue() {
         TestBean testBean = new TestBean("testbean");
         when(valueSerializer.toElement(resultObject)).thenReturn(new TestBean("testbean"));
-        when(collection.findOne(keyQueryObject)).thenReturn(null, resultObject);
-        
+        when(collection.count(keyQueryObject)).thenReturn(0L);
+        when(collection.findOne(keyQueryObject)).thenReturn(resultObject);
+
         assertNotNull(map.putIfAbsent("key", testBean));
-        
+
         verify(map).containsKey("key");
         verify(map).put("key", testBean);
     }
-    
+
     @Test
     public void putExistingValue() {
-        when(collection.findOne(keyQueryObject)).thenReturn(resultObject);
-        
+        when(collection.count(keyQueryObject)).thenReturn(1L);
+
         assertNull(map.putIfAbsent("key", new TestBean("testbean")));
-        
+
         verify(map).containsKey("key");
         verify(map, never()).put(anyString(), any(TestBean.class));
     }
-    
+
 }

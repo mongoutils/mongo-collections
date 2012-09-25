@@ -29,7 +29,7 @@ import com.mongodb.MongoException;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MongoConcurrentMapReplaceTest {
-    
+
     MongoConcurrentMap<String, TestBean> map;
     @Mock
     DBCollection collection;
@@ -45,90 +45,93 @@ public class MongoConcurrentMapReplaceTest {
     DBObject resultObject;
     @Captor
     ArgumentCaptor<TestBean> valueCaptor;
-    
+
     @Before
     public void createMap() throws UnknownHostException, MongoException {
         when(keySerializer.toDBObject(anyString(), anyBoolean(), anyBoolean())).thenReturn(keyQueryObject);
         when(valueSerializer.toDBObject(any(TestBean.class), anyBoolean(), anyBoolean())).thenReturn(valueQueryObject);
         map = new MongoConcurrentMap<String, TestBean>(collection, keySerializer, valueSerializer);
     }
-    
+
     @Test
     public void replaceValueEqual() {
         TestBean testBean1 = new TestBean("testbean1");
         TestBean testBean2 = new TestBean("testbean2");
-        
+
+        when(collection.count(keyQueryObject)).thenReturn(1L);
         when(collection.findOne(keyQueryObject)).thenReturn(resultObject);
         when(valueSerializer.toElement(resultObject)).thenReturn(testBean1);
-        
+
         map = spy(map);
         assertTrue(map.replace("key", testBean1, testBean2));
-        
+
         verify(map).containsKey("key");
         verify(map).get("key");
         verify(map).put("key", testBean2);
     }
-    
+
     @Test
     public void replaceValueNotEqual() {
         TestBean testBean1 = new TestBean("testbean1");
         TestBean testBean2 = new TestBean("testbean2");
-        
+
+        when(collection.count(keyQueryObject)).thenReturn(1L);
         when(collection.findOne(keyQueryObject)).thenReturn(resultObject);
         when(valueSerializer.toElement(resultObject)).thenReturn(testBean2);
-        
+
         map = spy(map);
         assertFalse(map.replace("key", testBean1, testBean2));
-        
+
         verify(map).containsKey("key");
         verify(map).get("key");
         verify(map, never()).put("key", testBean2);
     }
-    
+
     @Test
     public void replaceValueNotExisting() {
         TestBean testBean1 = new TestBean("testbean1");
         TestBean testBean2 = new TestBean("testbean2");
-        
+
         when(collection.findOne(keyQueryObject)).thenReturn(null);
-        
+
         map = spy(map);
         assertFalse(map.replace("key", testBean1, testBean2));
-        
+
         verify(map).containsKey("key");
         verify(map, never()).get("key");
         verify(map, never()).put("key", testBean2);
     }
-    
+
     @Test
     public void replaceNotExisting() {
         TestBean testBean = new TestBean("testbean");
-        
+
         when(collection.findOne(keyQueryObject)).thenReturn(null);
-        
+
         map = spy(map);
         assertNull(map.replace("key", testBean));
-        
+
         verify(map).containsKey("key");
         verify(map, never()).put("key", testBean);
     }
-    
+
     @Test
     public void replaceExisting() {
         TestBean testBean1 = new TestBean("testbean1");
         TestBean testBean2 = new TestBean("testbean2");
         TestBean result;
-        
+
+        when(collection.count(keyQueryObject)).thenReturn(1L);
         when(collection.findOne(keyQueryObject)).thenReturn(resultObject);
         when(valueSerializer.toElement(resultObject)).thenReturn(testBean1);
-        
+
         map = spy(map);
         result = map.replace("key", testBean2);
         assertNotNull(result);
         assertEquals(testBean1, result);
-        
+
         verify(map).containsKey("key");
         verify(map).put("key", testBean2);
     }
-    
+
 }

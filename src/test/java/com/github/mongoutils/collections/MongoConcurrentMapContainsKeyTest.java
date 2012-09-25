@@ -25,7 +25,7 @@ import com.mongodb.MongoException;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MongoConcurrentMapContainsKeyTest {
-    
+
     MongoConcurrentMap<String, TestBean> map;
     @Mock
     DBCollection collection;
@@ -37,31 +37,31 @@ public class MongoConcurrentMapContainsKeyTest {
     DBObject resultObject;
     @Captor
     ArgumentCaptor<String> keyCaptor;
-    
+
     @Before
     public void createMap() throws UnknownHostException, MongoException {
         when(keySerializer.toDBObject(anyString(), anyBoolean(), anyBoolean())).thenReturn(queryObject);
         map = new MongoConcurrentMap<String, TestBean>(collection, keySerializer, null);
     }
-    
+
     @Test
     public void keyNotContained() {
         when(collection.findOne(queryObject)).thenReturn(null);
-        
+
         assertFalse(map.containsKey("key"));
-        
+
         verify(keySerializer).toDBObject(keyCaptor.capture(), eq(true), eq(false));
         assertEquals("key", keyCaptor.getValue());
     }
-    
+
     @Test
     public void keyContained() {
-        when(collection.findOne(queryObject)).thenReturn(resultObject);
-        
+        when(collection.count(queryObject)).thenReturn(1L);
+
         assertTrue(map.containsKey("key"));
-        
+
         verify(keySerializer).toDBObject(keyCaptor.capture(), eq(true), eq(false));
         assertEquals("key", keyCaptor.getValue());
     }
-    
+
 }
