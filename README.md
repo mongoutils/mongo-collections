@@ -1,4 +1,6 @@
-# mongoutils-mongo-collections
+# mongo-collections
+
+MongoDB-backed Java collection implementations.
 
 ## License
 
@@ -18,8 +20,78 @@ The maven dependecy:
 <dependency>
     <groupId>com.github.mongodbutils</groupId>
     <artifactId>mongo-collections</artifactId>
-    <version>0.1</version>
+    <version>1.0</version>
 </dependency>
+```
+
+## Collections
+
+### Map
+
+There are three implementation of the ``java.util.Map`` (or ``java.util.concurrent.ConcurrentMap``) interface:
+
+* CachingMap
+* CachingConcurrentMap
+* MongoConcurrentMap
+
+The use of ``MongoConcurrentMap`` is to pass read and write requests through to MongoDB masked with
+a very common interface (``Map``) - it makes MongoDB a kind of a Key-Value-Store.
+
+To not send a request on every ``get()`` invocation one can decorate the ``MongoConcurrentMap``
+with ``CachingMap`` or the ``CachingConcurrentMap`` which caches a subset of the entries in the backstore (MongoDB).
+
+```java
+// the mongo connection + db + collection
+DBCollection collection = new Mongo("localhost", 27017).getDB("testDB").getCollection("testCollection");
+// the serializers for mapping DBObjects to String and vice versa
+DBObjectSerializer<String> keySerializer = new SimpleFieldDBObjectSerializer<String>("key");
+DBObjectSerializer<String> valueSerializer = new SimpleFieldDBObjectSerializer<String>("value");
+// will produce documents like "{'key':...,'value':...,'_id':ObjectID(...)}"
+Map<String, String> backstore = new MongoConcurrentMap<String, String>(collection, keySerializer, valueSerializer);
+// max. 1000 in memory
+Map<String, String> cache = new org.apache.commons.collections.LRUMap(1000);
+Map<String, String> map = new CachingMap<String, String>(cache, backstore);
+...
+map.get(...);
+...
+map.put("key", "value");
+...
+```
+
+### Collection
+
+``MongoCollection`` implements the ``java.util.Collection`` interface and is primary used by the ``values`` method
+of ``MongoConcurrentMap``, but it can be used as regular collection.
+
+```java
+// the mongo connection + db + collection
+DBCollection collection = new Mongo("localhost", 27017).getDB("testDB").getCollection("testCollection");
+DBObjectSerializer<String> serializer = ...;
+
+Collection<String> mongoCollection = new MongoCollection<String>(collection, serializer);
+...
+mongoCollection.add(...);
+...
+mongoCollection.remove(...);
+...
+```
+
+### Set
+
+``MongoSet`` implements the ``java.util.Set`` interface and is primary used by the ``keySet`` and ``entrySet`` methods
+of ``MongoConcurrentMap``, but it can be used as regular set.
+
+```java
+// the mongo connection + db + collection
+DBCollection collection = new Mongo("localhost", 27017).getDB("testDB").getCollection("testCollection");
+DBObjectSerializer<String> serializer = ...;
+
+Set<String> mongoSet = new MongoSet<String>(collection, serializer);
+...
+mongoSet.add(...);
+...
+mongoSet.remove(...);
+...
 ```
 
 ## Test it using mongodb-vm
@@ -34,3 +106,17 @@ Check the project out, open a console in that directory and type:
 cd mongovm
 vagrant up
 ```
+
+## Motivation
+
+There is a problem with both (distributed) caches and key-value-stores:
+
+```text
+They heavily depend on Memory and persistence is still an issue to most of them.
+```
+
+The most common solution is to limit the data amount or simply to buy new resources (bigger servers).
+
+To get rid of this problem MongoDB is used as persistence store and accessed via the ``Map`` interface.
+So under the bottom line we've got a persistent, distributed map without the need to run a separate
+service (Redis, Infinispan or EHCache) besides the database (MongoDB).
