@@ -7,16 +7,23 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 public class JacksonDBObjectSerializer<E> implements DBObjectSerializer<E> {
-
-    ObjectMapper mapper = new ObjectMapper();
+    
+    ObjectMapper mapper;
     String field;
     Class<E> type;
-
+    
     public JacksonDBObjectSerializer(final String field, final Class<E> type) {
         this.field = field;
         this.type = type;
+        mapper = new ObjectMapper();
     }
-
+    
+    public JacksonDBObjectSerializer(final String field, final Class<E> type, ObjectMapper mapper) {
+        this.field = field;
+        this.type = type;
+        this.mapper = mapper;
+    }
+    
     @Override
     public DBObject toDBObject(final E element, final boolean equalFunctions, final boolean negate) {
         if (equalFunctions && negate) {
@@ -24,10 +31,10 @@ public class JacksonDBObjectSerializer<E> implements DBObjectSerializer<E> {
         }
         return new BasicDBObject(field, mapper.convertValue(element, HashMap.class));
     }
-
+    
     @Override
     public E toElement(final DBObject dbObject) {
         return mapper.convertValue(((DBObject) dbObject.get(field)).toMap(), type);
     }
-
+    
 }
