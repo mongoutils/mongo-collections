@@ -15,13 +15,13 @@ import org.junit.Test;
 import com.mongodb.DBCollection;
 
 public class MongoQueueIT extends AbstractMongoIT {
-
+    
     @Test
     public void offerAndPoll() {
         DBCollection collection = mongo.getDB("testdb").getCollection("queue");
         DBObjectSerializer<String> serializer = new SimpleFieldDBObjectSerializer<String>("value");
         MongoQueue<String> queue = new MongoQueue<String>(collection, serializer);
-
+        
         assertEquals(0, queue.size());
         queue.offer("MyValue");
         assertEquals(1, queue.size());
@@ -30,14 +30,14 @@ public class MongoQueueIT extends AbstractMongoIT {
         assertEquals("MyValue", queue.poll());
         assertEquals(0, queue.size());
     }
-
+    
     @Test
     public void offerAndPollMany() {
         DBCollection collection = mongo.getDB("testdb").getCollection("queue");
         DBObjectSerializer<String> serializer = new SimpleFieldDBObjectSerializer<String>("value");
         MongoQueue<String> queue = new MongoQueue<String>(collection, serializer);
-        int count = 10000;
-
+        int count = 1000;
+        
         assertEquals(0, queue.size());
         for (int i = 0; i < count; i++) {
             queue.offer("MyValue" + i);
@@ -48,22 +48,22 @@ public class MongoQueueIT extends AbstractMongoIT {
         }
         assertEquals(0, queue.size());
     }
-
+    
     @Test
     public void offerAndPollManyMultithreaded() throws Exception {
         DBCollection collection = mongo.getDB("testdb").getCollection("queue");
         DBObjectSerializer<String> serializer = new SimpleFieldDBObjectSerializer<String>("value");
         final MongoQueue<String> queue = new MongoQueue<String>(collection, serializer);
-        final int count = 10000;
+        final int count = 1000;
         final AtomicInteger counter = new AtomicInteger();
         List<Callable<Void>> tasks = new ArrayList<Callable<Void>>();
         ExecutorService service = Executors.newFixedThreadPool(4);
-
+        
         assertEquals(0, queue.size());
-
+        
         for (int i = 0; i < 4; i++) {
             tasks.add(new Callable<Void>() {
-
+                
                 @Override
                 public Void call() throws Exception {
                     while (counter.get() < count) {
@@ -73,21 +73,21 @@ public class MongoQueueIT extends AbstractMongoIT {
                             }
                         }
                     }
-
+                    
                     return null;
                 }
-
+                
             });
         }
         service.invokeAll(tasks);
         service.shutdown();
         service.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-
+        
         assertEquals(count, queue.size());
         for (int i = 0; i < count; i++) {
             assertEquals("MyValue" + (i + 1), queue.poll());
         }
         assertEquals(0, queue.size());
     }
-
+    
 }
