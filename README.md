@@ -20,7 +20,7 @@ The maven dependecy:
 <dependency>
     <groupId>com.github.mongodbutils</groupId>
     <artifactId>mongo-collections</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
 </dependency>
 ```
 
@@ -94,6 +94,23 @@ mongoSet.remove(...);
 ...
 ```
 
+### Queue
+
+``MongoQueue`` implements the ``java.util.Queue`` interface.
+
+```java
+// the mongo connection + db + collection
+DBCollection collection = new Mongo("localhost", 27017).getDB("testDB").getCollection("testCollection");
+DBObjectSerializer<String> serializer = ...;
+
+Queue<String> mongoQueue = new MongoQueue<String>(collection, serializer);
+...
+mongoSet.offer("MyValue");
+...
+String value = mongoSet.poll();
+...
+```
+
 ## Test it using mongodb-vm
 
 The project comes with a fully functional VM with an mongodb installation for testing purpose.
@@ -106,6 +123,8 @@ Check the project out, open a console in that directory and type:
 cd mongovm
 vagrant up
 ```
+
+Integration tests are done with https://github.com/joelittlejohn/embedmongo-maven-plugin.
 
 ## Motivation
 
