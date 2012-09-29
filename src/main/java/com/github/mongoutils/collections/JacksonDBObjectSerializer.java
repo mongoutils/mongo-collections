@@ -34,7 +34,13 @@ public class JacksonDBObjectSerializer<E> implements DBObjectSerializer<E> {
     
     @Override
     public E toElement(final DBObject dbObject) {
-        return mapper.convertValue(((DBObject) dbObject.get(field)).toMap(), type);
+        Object obj;
+        
+        if (dbObject.containsField(field) && (obj = dbObject.get(field)) != null && obj instanceof DBObject) {
+            return mapper.convertValue(((DBObject) obj).toMap(), type);
+        }
+        
+        return null;
     }
     
 }

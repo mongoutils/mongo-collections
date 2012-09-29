@@ -20,7 +20,7 @@ The maven dependecy:
 <dependency>
     <groupId>com.github.mongodbutils</groupId>
     <artifactId>mongo-collections</artifactId>
-    <version>1.1</version>
+    <version>1.3</version>
 </dependency>
 ```
 

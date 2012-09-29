@@ -12,15 +12,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 
-import com.mongodb.DBCollection;
-
 public class MongoQueueIT extends AbstractMongoIT {
     
     @Test
     public void offerAndPoll() {
-        DBCollection collection = mongo.getDB("testdb").getCollection("queue");
         DBObjectSerializer<String> serializer = new SimpleFieldDBObjectSerializer<String>("value");
-        MongoQueue<String> queue = new MongoQueue<String>(collection, serializer);
+        MongoQueue<String> queue = new MongoQueue<String>(dbCollection, serializer);
         
         assertEquals(0, queue.size());
         queue.offer("MyValue");
@@ -33,9 +30,8 @@ public class MongoQueueIT extends AbstractMongoIT {
     
     @Test
     public void offerAndPollMany() {
-        DBCollection collection = mongo.getDB("testdb").getCollection("queue");
         DBObjectSerializer<String> serializer = new SimpleFieldDBObjectSerializer<String>("value");
-        MongoQueue<String> queue = new MongoQueue<String>(collection, serializer);
+        MongoQueue<String> queue = new MongoQueue<String>(dbCollection, serializer);
         int count = 1000;
         
         assertEquals(0, queue.size());
@@ -51,9 +47,8 @@ public class MongoQueueIT extends AbstractMongoIT {
     
     @Test
     public void offerAndPollManyMultithreaded() throws Exception {
-        DBCollection collection = mongo.getDB("testdb").getCollection("queue");
         DBObjectSerializer<String> serializer = new SimpleFieldDBObjectSerializer<String>("value");
-        final MongoQueue<String> queue = new MongoQueue<String>(collection, serializer);
+        final MongoQueue<String> queue = new MongoQueue<String>(dbCollection, serializer);
         final int count = 1000;
         final AtomicInteger counter = new AtomicInteger();
         List<Callable<Void>> tasks = new ArrayList<Callable<Void>>();
