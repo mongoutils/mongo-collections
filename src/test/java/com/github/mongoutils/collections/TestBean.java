@@ -18,6 +18,11 @@ public class TestBean {
         this.name = name;
     }
     
+    @Override
+    public boolean equals(Object obj) {
+        return name.equals(((TestBean) obj).name);
+    }
+    
     public int getCount() {
         return count;
     }

@@ -1,11 +1,9 @@
 package com.github.mongoutils.collections;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -14,8 +12,6 @@ import java.net.UnknownHostException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -34,18 +30,16 @@ public class MongoConcurrentMapPutTest {
     @Mock
     DBObjectSerializer<TestBean> valueSerializer;
     @Mock
-    DBObject keyQueryObject;
+    DBObject queryDBObject;
     @Mock
-    DBObject valueQueryObject;
+    DBObject keyDBObject;
     @Mock
-    DBObject resultObject;
-    @Captor
-    ArgumentCaptor<TestBean> valueCaptor;
+    DBObject valueDBObject;
+    @Mock
+    DBObject oldDBObject;
     
     @Before
     public void createMap() throws UnknownHostException, MongoException {
-        when(keySerializer.toDBObject(anyString(), anyBoolean(), anyBoolean())).thenReturn(keyQueryObject);
-        when(valueSerializer.toDBObject(any(TestBean.class), anyBoolean(), anyBoolean())).thenReturn(valueQueryObject);
         map = new MongoConcurrentMap<String, TestBean>(collection, keySerializer, valueSerializer);
     }
     
@@ -53,42 +47,42 @@ public class MongoConcurrentMapPutTest {
     public void putNotExisting() {
         TestBean testBean = new TestBean("testBean");
         
-        when(collection.findOne(keyQueryObject)).thenReturn(null);
+        when(keySerializer.toDBObject("key", true, false)).thenReturn(queryDBObject);
+        when(keySerializer.toDBObject("key", false, false)).thenReturn(keyDBObject);
+        when(valueSerializer.toDBObject(testBean, false, false)).thenReturn(valueDBObject);
+        when(collection.findAndModify(queryDBObject, null, null, false, keyDBObject, false, true)).thenReturn(null);
         
         assertNull(map.put("key", testBean));
         
         verify(keySerializer).toDBObject("key", true, false);
-        
-        verify(collection).findOne(keyQueryObject);
-        
         verify(keySerializer).toDBObject("key", false, false);
-        
         verify(valueSerializer).toDBObject(testBean, false, false);
-        verify(keyQueryObject).putAll(valueQueryObject);
-        verify(collection).save(keyQueryObject);
+        verify(valueSerializer, never()).toElement(any(DBObject.class));
+        verify(collection).findAndModify(queryDBObject, null, null, false, keyDBObject, false, true);
+        verify(keyDBObject).putAll(valueDBObject);
     }
     
     @Test
     public void replaceExisting() {
         TestBean testBean = new TestBean("testBean");
-        TestBean result;
+        TestBean old;
         
-        when(collection.findOne(keyQueryObject)).thenReturn(resultObject);
-        when(valueSerializer.toElement(resultObject)).thenReturn(testBean);
+        when(keySerializer.toDBObject("key", true, false)).thenReturn(queryDBObject);
+        when(keySerializer.toDBObject("key", false, false)).thenReturn(keyDBObject);
+        when(valueSerializer.toDBObject(testBean, false, false)).thenReturn(valueDBObject);
+        when(valueSerializer.toElement(oldDBObject)).thenReturn(testBean);
+        when(collection.findAndModify(queryDBObject, null, null, false, keyDBObject, false, true)).thenReturn(
+                oldDBObject);
         
-        result = map.put("key", testBean);
-        assertNotNull(result);
-        assertEquals(testBean, result);
+        old = map.put("key", testBean);
+        assertSame(testBean, old);
         
         verify(keySerializer).toDBObject("key", true, false);
-        
-        verify(collection).findOne(keyQueryObject);
-        
-        verify(valueSerializer).toElement(resultObject);
-        
+        verify(keySerializer).toDBObject("key", false, false);
         verify(valueSerializer).toDBObject(testBean, false, false);
-        verify(resultObject).putAll(valueQueryObject);
-        verify(collection).save(resultObject);
+        verify(valueSerializer).toElement(oldDBObject);
+        verify(collection).findAndModify(queryDBObject, null, null, false, keyDBObject, false, true);
+        verify(keyDBObject).putAll(valueDBObject);
     }
     
 }
