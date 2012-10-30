@@ -4,71 +4,71 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 public class CachingConcurrentMap<K, V> extends CachingMap<K, V> implements ConcurrentMap<K, V> {
-
+    
     Object monitor = new Object();
-
-    public CachingConcurrentMap(final ConcurrentMap<K, V> cache, final MongoConcurrentMap<K, V> backstore) {
+    
+    public CachingConcurrentMap(ConcurrentMap<K, V> cache, MongoConcurrentMap<K, V> backstore) {
         super(cache, backstore);
     }
-
+    
     @Override
     public void clear() {
         synchronized (monitor) {
             super.clear();
         }
     }
-
+    
     @Override
-    public boolean containsKey(final Object key) {
+    public boolean containsKey(Object key) {
         synchronized (monitor) {
             return super.containsKey(key);
         }
     }
-
+    
     @Override
-    public boolean containsValue(final Object value) {
+    public boolean containsValue(Object value) {
         synchronized (monitor) {
             return super.containsValue(value);
         }
     }
-
+    
     @Override
-    public V get(final Object key) {
+    public V get(Object key) {
         synchronized (monitor) {
             return super.get(key);
         }
     }
-
+    
     @Override
     public boolean isEmpty() {
         synchronized (monitor) {
             return super.isEmpty();
         }
     }
-
+    
     @Override
-    public V put(final K key, final V value) {
+    public V put(K key, V value) {
         synchronized (monitor) {
             return super.put(key, value);
         }
     }
-
+    
     @Override
-    public void putAll(final Map<? extends K, ? extends V> map) {
+    public void putAll(Map<? extends K, ? extends V> map) {
         synchronized (monitor) {
             super.putAll(map);
         }
     }
-
+    
     @Override
-    public V remove(final Object key) {
+    public V remove(Object key) {
         synchronized (monitor) {
             return super.remove(key);
         }
     }
-
+    
     @Override
-    public V putIfAbsent(final K key, final V value) {
+    public V putIfAbsent(K key, V value) {
         synchronized (monitor) {
             if (!super.containsKey(key)) {
                 return super.put(key, value);
@@ -76,9 +76,9 @@ public class CachingConcurrentMap<K, V> extends CachingMap<K, V> implements Conc
             return super.get(key);
         }
     }
-
+    
     @Override
-    public boolean remove(final Object key, final Object value) {
+    public boolean remove(Object key, Object value) {
         synchronized (monitor) {
             if (super.containsKey(key) && super.get(key).equals(value)) {
                 super.remove(key);
@@ -87,9 +87,9 @@ public class CachingConcurrentMap<K, V> extends CachingMap<K, V> implements Conc
             return false;
         }
     }
-
+    
     @Override
-    public V replace(final K key, final V value) {
+    public V replace(K key, V value) {
         synchronized (monitor) {
             if (super.containsKey(key)) {
                 return super.put(key, value);
@@ -97,9 +97,9 @@ public class CachingConcurrentMap<K, V> extends CachingMap<K, V> implements Conc
             return null;
         }
     }
-
+    
     @Override
-    public boolean replace(final K key, final V oldValue, final V newValue) {
+    public boolean replace(K key, V oldValue, V newValue) {
         synchronized (monitor) {
             if (super.containsKey(key) && super.get(key).equals(oldValue)) {
                 super.put(key, newValue);
@@ -108,5 +108,5 @@ public class CachingConcurrentMap<K, V> extends CachingMap<K, V> implements Conc
             return false;
         }
     }
-
+    
 }

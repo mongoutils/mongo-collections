@@ -12,20 +12,20 @@ public class JacksonDBObjectSerializer<E> implements DBObjectSerializer<E> {
     String field;
     Class<E> type;
     
-    public JacksonDBObjectSerializer(final String field, final Class<E> type) {
+    public JacksonDBObjectSerializer(String field, Class<E> type) {
         this.field = field;
         this.type = type;
         mapper = new ObjectMapper();
     }
     
-    public JacksonDBObjectSerializer(final String field, final Class<E> type, ObjectMapper mapper) {
+    public JacksonDBObjectSerializer(String field, Class<E> type, ObjectMapper mapper) {
         this.field = field;
         this.type = type;
         this.mapper = mapper;
     }
     
     @Override
-    public DBObject toDBObject(final E element, final boolean equalFunctions, final boolean negate) {
+    public DBObject toDBObject(E element, boolean equalFunctions, boolean negate) {
         if (equalFunctions && negate) {
             return new BasicDBObject(field, new BasicDBObject("$ne", mapper.convertValue(element, HashMap.class)));
         }
@@ -33,7 +33,7 @@ public class JacksonDBObjectSerializer<E> implements DBObjectSerializer<E> {
     }
     
     @Override
-    public E toElement(final DBObject dbObject) {
+    public E toElement(DBObject dbObject) {
         Object obj;
         
         if (dbObject.containsField(field) && (obj = dbObject.get(field)) != null && obj instanceof DBObject) {

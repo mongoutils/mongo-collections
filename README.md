@@ -20,11 +20,98 @@ The maven dependecy:
 <dependency>
     <groupId>com.github.mongodbutils</groupId>
     <artifactId>mongo-collections</artifactId>
-    <version>1.3</version>
+    <version>1.4</version>
 </dependency>
 ```
 
 ## Collections
+
+Since version 1.4 all Collection (and Map) implementation have their perspective CollectionCommands
+(package ``com.github.mongoutils.collections.command``).
+
+These command objects enables you to customize the behaviour of the collections without breaking the contract
+of the standard collection interfaces, esp. when querying MongoDB.
+It's made to manipulate queries for sorting or limiting the number of items given back from MongoDB without any
+special interface you need to work with. Simply assign the suiting (customized) CommandObjects when
+instantiating the Collection (or Map).
+
+```java
+DBCollection collection ...;
+DBObjectSerializer<String> keySerializer ...;
+DBObjectSerializer<String> valueSerializer ...;
+MongoConcurrentMap<String, String> backstore = new MongoConcurrentMap<String, String>(collection, keySerializer, valueSerializer);
+// the limit assigned to the current thread
+ThreadLocal<Integer> limits = new ThreadLocal<Integer>();
+
+// tell what to do when calling keySet ...
+backstore.setKeySetCommand(new MapKeySetCommand<K>() {
+    
+    /**
+     * When keySet() is called.
+     */
+    @Override
+    public MongoSet<K> keySet(DBCollection collection, DBObjectSerializer<K> serializer) {
+        
+        // the limit for the MongoDB Query
+        final int limit = limits.get();
+        
+        // the key-set of the map
+        MongoSet<K> set = new MongoSet<K>(collection, serializer);
+        
+        set.setIteratorCommand(new IteratorCommand<K>() {
+            
+            @Override
+            public CloseableIterator<K> iterator(final DBCollection collection, final DBObjectSerializer<K> serializer) {
+                new CloseableIterator<K>() {
+                    
+                    // HERE is where the limit is applied
+                    DBCursor cursor = collection.find().limit(limit);
+                    
+                    @Override
+                    public boolean hasNext() {
+                        boolean next = cursor.hasNext();
+                        if (!next) {
+                            cursor.close();
+                        }
+                        return next;
+                    }
+                    
+                    @Override
+                    public K next() {
+                        return serializer.toElement(cursor.next());
+                    }
+                    
+                    @Override
+                    public void remove() {
+                        cursor.remove();
+                    }
+                    
+                    @Override
+                    public void close() {
+                        cursor.close();
+                    }
+                    
+                };
+            }
+            
+        });
+        
+        // return the set with the special iterator impl.
+        return set;
+    }
+    
+});
+
+Map<String, String> map = backstore;
+
+...
+// set the limit - completely decoupled from the map itself
+limits.set(50);
+
+// fire the query transparently
+map.keySet();
+...
+```
 
 ### Map
 

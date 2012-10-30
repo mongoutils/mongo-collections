@@ -1,113 +1,105 @@
 package com.github.mongoutils.collections;
 
-import java.util.NoSuchElementException;
 import java.util.Queue;
 
-import com.mongodb.BasicDBObject;
+import com.github.mongoutils.collections.command.QueueElementCommand;
+import com.github.mongoutils.collections.command.QueueOfferCommand;
+import com.github.mongoutils.collections.command.QueuePeekCommand;
+import com.github.mongoutils.collections.command.QueuePollCommand;
+import com.github.mongoutils.collections.command.QueueRemoveCommand;
+import com.github.mongoutils.collections.command.impl.DefaultQueueElementCommand;
+import com.github.mongoutils.collections.command.impl.DefaultQueueOfferCommand;
+import com.github.mongoutils.collections.command.impl.DefaultQueuePeekCommand;
+import com.github.mongoutils.collections.command.impl.DefaultQueuePollCommand;
+import com.github.mongoutils.collections.command.impl.DefaultQueueRemoveCommand;
+import com.github.mongoutils.collections.command.impl.QueueIteratorCommand;
 import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
 
 public class MongoQueue<E> extends MongoCollection<E> implements Queue<E> {
-
-    private static final BasicDBObject ORDER_BY_ASC = new BasicDBObject("_id", 1);
-    private static final BasicDBObject ORDER_BY_DESC = new BasicDBObject("_id", -1);
-
-    boolean asc;
-
-    public MongoQueue(final DBCollection collection, final DBObjectSerializer<E> serializer) {
+    
+    protected QueuePollCommand<E> queuePollCommand;
+    protected QueueRemoveCommand<E> queueRemoveCommand;
+    protected QueuePeekCommand<E> queuePeekCommand;
+    protected QueueOfferCommand<E> queueOfferCommand;
+    protected QueueElementCommand<E> queueElementCommand;
+    
+    public MongoQueue(DBCollection collection, DBObjectSerializer<E> serializer) {
+        this(collection, serializer, true);
+    }
+    
+    public MongoQueue(DBCollection collection, DBObjectSerializer<E> serializer, boolean asc) {
         super(collection, serializer);
-        asc = true;
+        iteratorCommand = new QueueIteratorCommand<E>(asc);
+        queuePollCommand = new DefaultQueuePollCommand<E>(asc, isEmptyCommand);
+        queueRemoveCommand = new DefaultQueueRemoveCommand<E>(isEmptyCommand, queuePollCommand);
+        queuePeekCommand = new DefaultQueuePeekCommand<E>(asc, isEmptyCommand);
+        queueOfferCommand = new DefaultQueueOfferCommand<E>(addCommand);
+        queueElementCommand = new DefaultQueueElementCommand<E>(isEmptyCommand, queuePeekCommand);
     }
-
-    public MongoQueue(final DBCollection collection, final DBObjectSerializer<E> serializer, final boolean asc) {
-        super(collection, serializer);
-        this.asc = asc;
-    }
-
-    @Override
-    public CloseableIterator<E> iterator() {
-        return new CloseableIterator<E>() {
-
-            DBCursor cursor = collection.find().sort(asc ? ORDER_BY_ASC : ORDER_BY_DESC);
-
-            @Override
-            public boolean hasNext() {
-                boolean next = cursor.hasNext();
-                if (!next) {
-                    cursor.close();
-                }
-                return next;
-            }
-
-            @Override
-            public E next() {
-                return serializer.toElement(cursor.next());
-            }
-
-            @Override
-            public void remove() {
-                cursor.remove();
-            }
-
-            @Override
-            public void close() {
-                cursor.close();
-            }
-
-        };
-    }
-
+    
     @Override
     public E remove() {
-        if (isEmpty()) {
-            throw new NoSuchElementException();
-        }
-        return poll();
+        return queueRemoveCommand.remove(collection, serializer);
     }
-
+    
     @Override
-    public boolean offer(final E e) {
-        return add(e);
+    public boolean offer(E e) {
+        return queueOfferCommand.offer(collection, serializer, e);
     }
-
+    
     @Override
     public E poll() {
-        DBObject dbObject;
-
-        if (isEmpty()) {
-            return null;
-        }
-
-        dbObject = collection.findAndModify(null, null, asc ? ORDER_BY_ASC : ORDER_BY_DESC, true, null, false, false);
-        return serializer.toElement(dbObject);
+        return queuePollCommand.poll(collection, serializer);
     }
-
+    
     @Override
     public E element() {
-        if (isEmpty()) {
-            throw new NoSuchElementException();
-        }
-        return peek();
+        return queueElementCommand.element(collection, serializer);
     }
-
+    
     @Override
     public E peek() {
-        DBCursor cursor;
-
-        if (isEmpty()) {
-            return null;
-        }
-
-        cursor = collection.find().sort(asc ? ORDER_BY_ASC : ORDER_BY_DESC);
-        try {
-            if (cursor.hasNext()) {
-                return serializer.toElement(cursor.next());
-            }
-            return null;
-        } finally {
-            cursor.close();
-        }
+        return queuePeekCommand.peek(collection, serializer);
     }
-
+    
+    public QueuePollCommand<E> getQueuePollCommand() {
+        return queuePollCommand;
+    }
+    
+    public void setQueuePollCommand(QueuePollCommand<E> queuePollCommand) {
+        this.queuePollCommand = queuePollCommand;
+    }
+    
+    public QueueRemoveCommand<E> getQueueRemoveCommand() {
+        return queueRemoveCommand;
+    }
+    
+    public void setQueueRemoveCommand(QueueRemoveCommand<E> queueRemoveCommand) {
+        this.queueRemoveCommand = queueRemoveCommand;
+    }
+    
+    public QueuePeekCommand<E> getQueuePeekCommand() {
+        return queuePeekCommand;
+    }
+    
+    public void setQueuePeekCommand(QueuePeekCommand<E> queuePeekCommand) {
+        this.queuePeekCommand = queuePeekCommand;
+    }
+    
+    public QueueOfferCommand<E> getQueueOfferCommand() {
+        return queueOfferCommand;
+    }
+    
+    public void setQueueOfferCommand(QueueOfferCommand<E> queueOfferCommand) {
+        this.queueOfferCommand = queueOfferCommand;
+    }
+    
+    public QueueElementCommand<E> getQueueElementCommand() {
+        return queueElementCommand;
+    }
+    
+    public void setQueueElementCommand(QueueElementCommand<E> queueElementCommand) {
+        this.queueElementCommand = queueElementCommand;
+    }
+    
 }
