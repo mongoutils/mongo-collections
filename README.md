@@ -26,7 +26,7 @@ The maven dependecy:
 
 ## Collections
 
-Since version 1.5 all Collection (and Map) implementation have their perspective CollectionCommands
+Since version 1.4 all Collection (and Map) implementation have their perspective CollectionCommands
 (package ``com.github.mongoutils.collections.command``).
 
 These command objects enables you to customize the behaviour of the collections without breaking the contract
