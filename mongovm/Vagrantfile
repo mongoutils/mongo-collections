@@ -8,6 +8,7 @@ Vagrant::Config.run do |config|
 
   config.vm.define :mongo do |mongo_config|
       mongo_config.vm.forward_port 27017, 27017
+      mongo_config.vm.forward_port 28017, 28017
       mongo_config.vm.provision :puppet do |puppet|
       puppet.manifests_path = "manifests"
       puppet.manifest_file = "mongo.pp"
