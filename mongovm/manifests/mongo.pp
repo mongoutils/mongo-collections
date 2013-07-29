@@ -38,7 +38,19 @@ class mongo {
     }
 }
 
+class configmongo {
+   exec { "set-rest-mongodb":
+        require => Class["mongo"],
+        command => "echo 'rest = true' >> /etc/mongodb.conf"
+   }
+   exec { "restart-mongo":
+        require => Class["mongo"],
+        command => "/etc/init.d/mongodb restart"
+   }
+}
+
 include apt
 include git
 include ssh
 include mongo
+include configmongo
