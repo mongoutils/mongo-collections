@@ -3,7 +3,7 @@ Short intro for vagrant and virtualbox installation
 
 ## Vagrant 
 
-* Download software [here](http://downloads.vagrantup.com/) `(choose *.deb package if you are running __Ubuntu__ or __Debian__ and choose the latest version, as of writing [v.1.2.7](http://downloads.vagrantup.com/tags/v1.2.7) is available`)
+* Download software [here](http://downloads.vagrantup.com/) (choose *.deb package if you are running __Ubuntu__ or __Debian__ and choose the latest version, as of writing [v.1.2.7](http://downloads.vagrantup.com/tags/v1.2.7) is available)
 
 * Install the package via
 
