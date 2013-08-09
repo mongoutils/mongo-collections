@@ -18,7 +18,7 @@ The maven dependecy:
 
 ```xml
 <dependency>
-    <groupId>com.github.mongodbutils</groupId>
+    <groupId>com.github.mongoutils</groupId>
     <artifactId>mongo-collections</artifactId>
     <version>1.4</version>
 </dependency>
