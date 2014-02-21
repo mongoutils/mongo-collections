@@ -226,3 +226,7 @@ The most common solution is to limit the data amount or simply to buy new resour
 To get rid of this problem MongoDB is used as persistence store and accessed via the ``Map`` interface.
 So under the bottom line we've got a persistent, distributed map without the need to run a separate
 service (Redis, Infinispan or EHCache) besides the database (MongoDB).
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/rstiller/mongo-collections/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
